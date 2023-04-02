@@ -124,6 +124,14 @@ int getMoveScore(char board[][26], int n, char colour, int row, int col) {
     return score;
 }
 
+void getBoardScores(char board[][26], int n, char colour, int scores[][26]) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            scores[i][j] = getMoveScore(board, n, colour, i, j);
+        }
+    }
+}
+
 void copyBoard(char original[][26], char copy[][26], int n) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
@@ -192,30 +200,41 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
     if (turn == 'B') {
         otherColour = 'W';
     }
+    int scores[26][26];
+    getBoardScores(board, n, turn, scores);
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            tempScore = getMoveScore(board, n, turn, i, j);
-            if (tempScore == 0) {
-                continue;
-            }
-            copyBoard(board, nextBoard, n);
-            move[0] = turn;
-            move[1] = i + 'a';
-            move[2] = j + 'a';
-            flipPieces(nextBoard, n, move);
-            if (maxDepth>0) {
-                additionalScore = findMove(nextBoard, n, otherColour, row, col, maxDepth-1);
-                tempScore = tempScore-additionalScore;
-            }
-            if (tempScore > bestScore) {
-                bestScore = tempScore + additionalScore;
-                if (maxDepth == MAX_DEPTH) {
-                    (*row) = i;
-                    (*col) = j;
-                }
+            if (scores[i][j] > bestScore) {
+                bestScore = scores[i][j];
+                (*row) = i;
+                (*col) = j;
             }
         }
     }
+    // for (int i = 0; i < n; i++) {
+    //     for (int j = 0; j < n; j++) {
+    //         tempScore = getMoveScore(board, n, turn, i, j);
+    //         if (tempScore == 0) {
+    //             continue;
+    //         }
+    //         copyBoard(board, nextBoard, n);
+    //         move[0] = turn;
+    //         move[1] = i + 'a';
+    //         move[2] = j + 'a';
+    //         flipPieces(nextBoard, n, move);
+    //         if (maxDepth>0) {
+    //             additionalScore = findMove(nextBoard, n, otherColour, row, col, maxDepth-1);
+    //             tempScore = tempScore-additionalScore;
+    //         }
+    //         if (tempScore > bestScore) {
+    //             bestScore = tempScore + additionalScore;
+    //             if (maxDepth == MAX_DEPTH) {
+    //                 (*row) = i;
+    //                 (*col) = j;
+    //             }
+    //         }
+    //     }
+    // }
     return bestScore;
 }
 
@@ -329,7 +348,6 @@ int main(void) {
         }
         move[0] = computerColour;
         if (hasLegalMove(board, size, computerColour)) {
-            printf("COMPUTER MAKING MOVE\n");
 
             getrusage(RUSAGE_SELF, &usage);
             start = usage.ru_utime;
