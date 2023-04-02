@@ -73,8 +73,6 @@ void printBoard(char board[][26], int n) {
     }
 }
 
-
-
 bool positionInBounds(int n, int row, int col) {
     if (row < n && col < n && row > -1 && col > -1) {
         return true;
@@ -115,13 +113,18 @@ bool checkLegalInDirection(char board[][26], int n, int row, int col, char colou
 int getMoveScore(char board[][26], int n, char colour, int row, int col) {
     int startRow = row;
     int startCol = col;
-    int score = 0;
+    int score = -10000;
+    bool moveLegal = false;
     bool edgeRow, edgeCol;
     for (int i = -1; i < 2; i++) {
         for (int j = -1; j < 2; j++) {
             row = startRow;
             col = startCol;
             if (checkLegalInDirection(board, n, row, col, colour, i, j)) {
+                if (!moveLegal) {
+                    score = 0;
+                    moveLegal = true;
+                }
                 while (1) {
                     row += i;
                     col += j;
@@ -237,15 +240,41 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
     }
     int scores[26][26];
     getBoardScores(board, n, turn, scores);
+    printf("\nThe board scores are: \n");
+    printScores(scores, n);
+    printf("\n");
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (scores[i][j] == -10000) {
+                continue;
+            }
+            if (maxDepth > 0) {
+                copyBoard(board, nextBoard, n);
+                move[0] = turn;
+                move[1] = i + 'a';
+                move[2] = j + 'a';
+                flipPieces(nextBoard, n, move);
+                scores[i][j] = scores[i][j] - findMove(nextBoard, n, otherColour, row, col, maxDepth - 1);
+            }
+        }
+    }
+
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             if (scores[i][j] > bestScore) {
                 bestScore = scores[i][j];
-                (*row) = i;
-                (*col) = j;
+                if (maxDepth == MAX_DEPTH) {
+                    printf("Final scores:\n");
+                    printScores(scores, n);
+                    printf("\n");
+                    (*row) = i;
+                    (*col) = j;
+                }
             }
         }
     }
+
     // for (int i = 0; i < n; i++) {
     //     for (int j = 0; j < n; j++) {
     //         tempScore = getMoveScore(board, n, turn, i, j);
@@ -274,7 +303,7 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
 }
 
 int makeMove(char board[][26], int n, char turn, int *row, int *col) {
-    return findMove(board, n, turn, row, col, 2);
+    return findMove(board, n, turn, row, col, MAX_DEPTH);
 }
 
 char winner(char board[][26], int n) {
