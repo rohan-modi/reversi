@@ -4,7 +4,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-const int MAX_DEPTH=2;
+const int MAX_DEPTH=5;
 
 const bool PRINT_FRIENDLY_BOARD=true;
 const char BLACK = '#';
@@ -124,6 +124,9 @@ bool checkLegalInDirection(char board[][26], int n, int row, int col, char colou
     }
 }
 
+// Calculates and returns the score for a single cell.
+// Does not recurse into further depths.
+// Returns -10000 if the move is invalid.
 int getMoveScore(char board[][26], int n, char colour, int row, int col) {
     int startRow = row;
     int startCol = col;
@@ -176,6 +179,9 @@ int getMoveScore(char board[][26], int n, char colour, int row, int col) {
     return score;
 }
 
+// Calculates the scores for all cells and populates them into the provided 2D array.
+// Does not recurse into further depths.
+// Cells with no valid move will contain -10000.
 void getBoardScores(char board[][26], int n, char colour, int scores[][26]) {
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
