@@ -4,15 +4,15 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-enum STYLES {
-  DEFAULT=0,
-  CLEAN=1
-};
-
 const int MAX_DEPTH=2;
 
+const bool PRINT_FRIENDLY_BOARD=false;
+
+const char BLACK = 'B';
+const char WHITE = 'W';
+const char BLANK = 'U';
+
 bool printStuff = false;
-enum STYLES boardStyle = CLEAN;
 int totalMovesCounter = 1;
 
 struct rusage usage; // a structure to hold "resource usage" (including time)
@@ -20,10 +20,43 @@ struct timeval start, end; // will hold the start and end times
 double timeStart, timeEnd, totalTime;
 
 bool isOccupied(char board[][26], int row, int col) {
-    return board[row][col] == 'U';
+    return board[row][col] == BLANK;
+}
+
+// The following function prints the game board along with the axis labeled a-z
+// depending on the size of the of the dimensions
+void printBoardStyled(char board[][26], int n) {
+  // Print the column labels
+  printf("  ");
+  for (int i = 0; i < n; i++) {
+    printf("  %c ", 'a' + i);
+  }
+  printf("\n  ");
+  for (int j = 0; j < n; j++) {
+    printf("+---");
+  }
+  printf("+\n");
+
+  // Print the rows of the board
+  for (int i = 0; i < n; i++) {
+    printf("%c ", 'a' + i);
+    for (int j = 0; j < n; j++) {
+      printf("| %c ", board[i][j]);
+    }
+    printf("|\n");
+    printf("  ");
+    for (int j = 0; j < n; j++) {
+      printf("+---");
+    }
+    printf("+\n");
+  }
 }
 
 void printBoard(char board[][26], int n) {
+    if (PRINT_FRIENDLY_BOARD) {
+        printBoardStyled(board,n);
+        return;
+    }
     printf("  ");
     char letter =  'a';
     for (int i = 0; i < n; i++) {
@@ -39,6 +72,8 @@ void printBoard(char board[][26], int n) {
         }
     }
 }
+
+
 
 bool positionInBounds(int n, int row, int col) {
     if (row < n && col < n && row > -1 && col > -1) {
@@ -170,10 +205,10 @@ void flipPieces(char board[][26], int n, char move[4]) {
                     currentRow += i;
                     currentCol += j;
                     if (positionInBounds(n, currentRow, currentCol)) {
-                        if (board[currentRow][currentCol] == 'U') {
+                        if (board[currentRow][currentCol] == BLANK) {
                             break;
                         }
-                        if (board[currentRow][currentCol] != 'U' && board[currentRow][currentCol] != move[0]) {
+                        if (board[currentRow][currentCol] != BLANK && board[currentRow][currentCol] != move[0]) {
                             board[currentRow][currentCol] = move[0];
                         }
                         else {
@@ -195,10 +230,10 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
     int bestScore = -1000, tempScore, additionalScore;
     int bestRow, bestCol;
     char nextBoard[26][26];
-    char otherColour = 'B';
+    char otherColour = BLACK;
     char move[4];
-    if (turn == 'B') {
-        otherColour = 'W';
+    if (turn == BLACK) {
+        otherColour = WHITE;
     }
     int scores[26][26];
     getBoardScores(board, n, turn, scores);
@@ -247,17 +282,17 @@ char winner(char board[][26], int n) {
     int scoreW = 0;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            if (board[i][j] == 'B') {
+            if (board[i][j] == BLACK) {
                 scoreB++;
-            } else if (board[i][j] == 'W') {
+            } else if (board[i][j] == WHITE) {
                 scoreW++;
             }
         }
     }
     if (scoreB > scoreW) {
-        return 'B';
+        return BLACK;
     } else if (scoreW > scoreB) {
-        return 'W';
+        return WHITE;
     }
     return 'D';
 }
@@ -270,18 +305,27 @@ int main(void) {
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             if ((i == size/2 - 1 && j == size/2 - 1) || (i == size/2 && j == size/2)) {
-                board[i][j] = 'W';
+                board[i][j] = WHITE;
             } 
             else if ((i == size/2 - 1 && j == size/2) || (i == size/2 && j == size/2 - 1)) {
-                board[i][j] = 'B';
+                board[i][j] = BLACK;
             } else {
-                board[i][j] = 'U';
+                board[i][j] = BLANK;
             }
         }
     }
     printf("Computer plays (B/W): ");
-    char computerColour, playerColour;
-    scanf(" %c", &computerColour);
+    char computerColour, playerColour, inputColour;
+    scanf(" %c", &inputColour);
+
+    if (inputColour == 'w' || inputColour == 'W') {
+        computerColour = WHITE;
+        playerColour = BLACK;
+    } else {
+        computerColour = BLACK;
+        playerColour = WHITE;
+    }
+
     int bestRow, bestCol;
     char move[4];
     char input[3];
@@ -290,24 +334,21 @@ int main(void) {
     char winningColour;
     int inputRow, inputCol;
 
-    if (computerColour == 'B') {
-        playerColour = 'W';
-        move[0] = 'B';
+    if (computerColour == BLACK) {
+        move[0] = BLACK;
 
         getrusage(RUSAGE_SELF, &usage);
         start = usage.ru_utime;
         timeStart = start.tv_sec + start.tv_usec / 1000000.0; // in seconds
 
-        findMove(board, size, 'B', &bestRow, &bestCol, MAX_DEPTH);
+        findMove(board, size, BLACK, &bestRow, &bestCol, MAX_DEPTH);
         move[1] = bestRow + 'a';
         move[2] = bestCol + 'a';
         flipPieces(board, size, move);
         printf("\nComputer places B at %c%c.\n", move[1], move[2]);
         printBoard(board, size);
     } 
-    else {
-        playerColour = 'B';
-    }
+
     while(1) {
         if (hasLegalMove(board, size, playerColour)) {
             printf("\nEnter move for colour %c (RowCol): ", playerColour);
@@ -340,9 +381,9 @@ int main(void) {
         if (!hasLegalMove(board, size, computerColour) && !hasLegalMove(board, size, playerColour)) {
             winningColour = winner(board, size);
             if (winningColour == 'D') {
-                printf("You both suck");
+                printf("\nYou both suck\n\n");
             } else {
-                printf("\n%c player wins.", winningColour);
+                printf("\n%c player wins.\n\n", winningColour);
             }
             return 0;
         }
@@ -368,7 +409,7 @@ int main(void) {
             if (winningColour == 'D') {
                 printf("You both suck");
             } else {
-                printf("\n%c player wins.", winningColour);
+                printf("\n%c player wins.\n\n", winningColour);
             }
             return 0;
         }
