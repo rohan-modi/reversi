@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
-#include "liblab8part2.h"
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -87,10 +86,6 @@ int getMoveScore(char board[][26], int n, char colour, int row, int col) {
         for (int j = -1; j < 2; j++) {
             row = startRow;
             col = startCol;
-            // float totalMoves = (n*n-4)/2;
-            // float quotient = totalMovesCounter / totalMoves;
-            // printf("Total: %f\n", totalMoves);
-            // printf("Quotient: %f\n", quotient);
             if (checkLegalInDirection(board, n, row, col, colour, i, j)) {
                 while (1) {
                     row += i;
@@ -115,9 +110,6 @@ int getMoveScore(char board[][26], int n, char colour, int row, int col) {
                                     score += 3;
                                 }
                             }
-                            // if ((row == 1 && col == 1) || (row == n - 2 && col == 1) || (row == n - 2 && col == n - 2) || (row == 1 && col == n - 2)) {
-                            //     score -=2;
-                            // }
                         }
                         else {
                             break;
@@ -192,16 +184,6 @@ void flipPieces(char board[][26], int n, char move[4]) {
 }
 
 int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDepth) {
-    // if (depth == 1000) {
-    //     return 1000;
-    // }
-    // getrusage(RUSAGE_SELF, &usage);
-    // end = usage.ru_utime;
-    // timeEnd = end.tv_sec + end.tv_usec / 1000000.0; // in seconds
-    // totalTime = timeEnd - timeStart;
-    // if (totalTime > 0.9) {
-    //     return 1000;
-    // }
     int bestScore = -1000, tempScore, additionalScore;
     int bestRow, bestCol;
     char nextBoard[26][26];
@@ -221,21 +203,10 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
             move[1] = i + 'a';
             move[2] = j + 'a';
             flipPieces(nextBoard, n, move);
-            // printf("\n----------------------------------\n");
-            // printf("current depth: %d, row: %d, col: %d, score: %d\n", maxDepth, i, j, bestScore);
-            // // printf("Current board\n");
-            // // printBoard(board, n);
-            // // printf("\nnextBoard:\n");
-            // // printBoard(nextBoard, n);
-            // printf("\n----------------------------------\n");
             if (maxDepth>0) {
                 additionalScore = findMove(nextBoard, n, otherColour, row, col, maxDepth-1);
                 tempScore = tempScore-additionalScore;
             }
-            
-            // if (additionalScore == 1000) {
-            //     additionalScore = 0;
-            // }
             if (tempScore > bestScore) {
                 bestScore = tempScore + additionalScore;
                 if (maxDepth == MAX_DEPTH) {
@@ -245,7 +216,6 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
             }
         }
     }
-//    return bestScore * pow(-1, depth);
     return bestScore;
 }
 
@@ -327,13 +297,6 @@ int main(void) {
             move[0] = playerColour;
             move[1] = input[0];
             move[2] = input[1];
-
-            // findSmarterMove(board, size, playerColour, &inputRow, &inputCol);
-            // move[0] = playerColour;
-            // move[1] = inputRow;
-            // move[2] = inputCol;
-            // printf("Testing AI move (row, col): %c%c\n", inputRow + 'a', inputCol + 'a');
-
             bool validMove = false;
             for (int i = -1; i < 2; i++) {
                 for (int j = -1; j < 2; j++) {
