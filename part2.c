@@ -12,12 +12,21 @@ const bool PRINT_FRIENDLY_BOARD=true;
 const char BLACK = '#';
 const char WHITE = 'O';
 const char BLANK = ' ';
+const bool COMPUTER_PLAYS_FOR_HUMAN=true;
 
 // const bool PRINT_FRIENDLY_BOARD=false;
 // const char BLACK = 'B';
 // const char WHITE = 'W';
 // const char BLANK = 'U';
+// const bool COMPUTER_PLAYS_FOR_HUMAN=false;
 
+struct Score {
+    int blackScore;
+    int whiteScore;
+    char winner;
+};
+
+typedef struct Score Score;
 
 bool printStuff = false;
 int totalMovesCounter = 1;
@@ -339,24 +348,27 @@ int makeMove(char board[][26], int n, char turn, int *row, int *col) {
     return findMove(board, n, turn, row, col, MAX_DEPTH, 900);
 }
 
-char winner(char board[][26], int n) {
-    int scoreB = 0;
-    int scoreW = 0;
+Score winner(char board[][26], int n) {
+    Score result;
+    result.blackScore=0;
+    result.whiteScore=0;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             if (board[i][j] == BLACK) {
-                scoreB++;
+                result.blackScore++;
             } else if (board[i][j] == WHITE) {
-                scoreW++;
+                result.whiteScore++;
             }
         }
     }
-    if (scoreB > scoreW) {
-        return BLACK;
-    } else if (scoreW > scoreB) {
-        return WHITE;
+    if (result.blackScore > result.whiteScore) {
+        result.winner=BLACK;
+    } else if (result.whiteScore > result.blackScore) {
+        result.winner=WHITE;
+    } else {
+        result.winner='D';
     }
-    return 'D';
+    return result;
 }
 
 int main(void) {
@@ -393,7 +405,7 @@ int main(void) {
     char input[3];
     printBoard(board, size);
 
-    char winningColour;
+    Score result;
     int inputRow, inputCol;
 
     if (computerColour == BLACK) {
@@ -403,18 +415,26 @@ int main(void) {
         move[1] = bestRow + 'a';
         move[2] = bestCol + 'a';
         flipPieces(board, size, move);
-        printf("\nComputer places B at %c%c.\n", move[1], move[2]);
+        printf("\nComputer places %c at %c%c.\n", BLACK, move[1], move[2]);
         printBoard(board, size);
     } 
 
     while(1) {
         if (hasLegalMove(board, size, playerColour)) {
-            printf("\nEnter move for colour %c (RowCol): ", playerColour);
-            
-            scanf("%s", input);
+
+            if (COMPUTER_PLAYS_FOR_HUMAN) {
+                findMove(board, size, playerColour, &bestRow, &bestCol, MAX_DEPTH);
+                move[1] = bestRow + 'a';
+                move[2] = bestCol + 'a';                
+                printf("\nComputer places %c for Player at %c%c.\n", playerColour, move[1], move[2]);
+            } else {
+                printf("\nEnter move for colour %c (RowCol): ", playerColour);
+                scanf("%s", input);
+                move[1] = input[0];
+                move[2] = input[1];
+            }
             move[0] = playerColour;
-            move[1] = input[0];
-            move[2] = input[1];
+
             bool validMove = false;
             for (int i = -1; i < 2; i++) {
                 for (int j = -1; j < 2; j++) {
@@ -437,11 +457,12 @@ int main(void) {
             printf("%c player has no valid move.\n", playerColour);
         }
         if (!hasLegalMove(board, size, computerColour) && !hasLegalMove(board, size, playerColour)) {
-            winningColour = winner(board, size);
-            if (winningColour == 'D') {
+            result = winner(board, size);
+            if (result.winner == 'D') {
                 printf("\nYou both suck\n\n");
             } else {
-                printf("\n%c player wins.\n\n", winningColour);
+                printf("\n%c: %d, %c: %d --- %c player wins.\n\n",
+                BLACK, result.blackScore, WHITE, result.whiteScore, result.winner);
             }
             return 0;
         }
@@ -456,14 +477,15 @@ int main(void) {
             totalMovesCounter++;
             printBoard(board, size);
         } else {
-            printf("%c player has no valid move.\n", computerColour);
+            printf("Computer player %c has no valid move.\n", computerColour);
         }
         if (!hasLegalMove(board, size, computerColour) && !hasLegalMove(board, size, playerColour)) {
-            winningColour = winner(board, size);
-            if (winningColour == 'D') {
+            result = winner(board, size);
+            if (result.winner == 'D') {
                 printf("You both suck");
             } else {
-                printf("\n%c player wins.\n\n", winningColour);
+                printf("\n%c: %d, %c: %d --- %c player wins.\n\n",
+                BLACK, result.blackScore, WHITE, result.whiteScore, result.winner);
             }
             return 0;
         }
