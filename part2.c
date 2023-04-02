@@ -8,9 +8,13 @@ const int MAX_DEPTH=2;
 
 const bool PRINT_FRIENDLY_BOARD=false;
 
-const char BLACK = 'B';
-const char WHITE = 'W';
-const char BLANK = 'U';
+const char BLACK = '#';
+const char WHITE = 'O';
+const char BLANK = ' ';
+// const char BLACK = 'B';
+// const char WHITE = 'W';
+// const char BLANK = 'U';
+
 
 bool printStuff = false;
 int totalMovesCounter = 1;
