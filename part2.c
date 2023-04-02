@@ -28,6 +28,15 @@ bool isOccupied(char board[][26], int row, int col) {
     return board[row][col] == BLANK;
 }
 
+void printScores(int board[][26], int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            printf("%d ", board[i][j]);
+        }
+        printf("\n");
+    }
+}
+
 // The following function prints the game board along with the axis labeled a-z
 // depending on the size of the of the dimensions
 void printBoardStyled(char board[][26], int n) {
@@ -245,9 +254,9 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
     }
     int scores[26][26];
     getBoardScores(board, n, turn, scores);
-    printf("\nThe board scores are: \n");
-    printScores(scores, n);
-    printf("\n");
+    // printf("\nThe board scores are: \n");
+    // printScores(scores, n);
+    // printf("\n");
 
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
@@ -270,9 +279,9 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
             if (scores[i][j] > bestScore) {
                 bestScore = scores[i][j];
                 if (maxDepth == MAX_DEPTH) {
-                    printf("Final scores:\n");
-                    printScores(scores, n);
-                    printf("\n");
+                    // printf("Final scores:\n");
+                    // printScores(scores, n);
+                    // printf("\n");
                     (*row) = i;
                     (*col) = j;
                 }
