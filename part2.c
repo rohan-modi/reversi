@@ -12,6 +12,7 @@ const bool PRINT_FRIENDLY_BOARD=true;
 const char BLACK = '#';
 const char WHITE = 'O';
 const char BLANK = ' ';
+const bool COMPUTER_PLAYS_FOR_HUMAN=true;
 
 // const bool PRINT_FRIENDLY_BOARD=false;
 // const char BLACK = 'B';
