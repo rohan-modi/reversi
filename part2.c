@@ -8,15 +8,15 @@ const int MAX_DEPTH = 10;
 const int MAX_TIME = 900;
 const int INVALID_MOVE_SCORE = -100000;
 
-// const bool PRINT_FRIENDLY_BOARD=true;
-// const char BLACK = '#';
-// const char WHITE = 'O';
-// const char BLANK = ' ';
+const bool PRINT_FRIENDLY_BOARD=true;
+const char BLACK = '#';
+const char WHITE = 'O';
+const char BLANK = ' ';
 
-const bool PRINT_FRIENDLY_BOARD=false;
-const char BLACK = 'B';
-const char WHITE = 'W';
-const char BLANK = 'U';
+// const bool PRINT_FRIENDLY_BOARD=false;
+// const char BLACK = 'B';
+// const char WHITE = 'W';
+// const char BLANK = 'U';
 
 
 bool printStuff = false;
@@ -399,10 +399,6 @@ int main(void) {
     if (computerColour == BLACK) {
         move[0] = BLACK;
 
-        getrusage(RUSAGE_SELF, &usage);
-        start = usage.ru_utime;
-        timeStart = start.tv_sec + start.tv_usec / 1000000.0; // in seconds
-
         findMove(board, size, BLACK, &bestRow, &bestCol, MAX_DEPTH, MAX_TIME);
         move[1] = bestRow + 'a';
         move[2] = bestCol + 'a';
@@ -451,10 +447,6 @@ int main(void) {
         }
         move[0] = computerColour;
         if (hasLegalMove(board, size, computerColour)) {
-
-            getrusage(RUSAGE_SELF, &usage);
-            start = usage.ru_utime;
-            timeStart = start.tv_sec + start.tv_usec / 1000000.0; // in seconds
 
             findMove(board, size, computerColour, &bestRow, &bestCol, MAX_DEPTH, MAX_TIME);
             move[1] = bestRow + 'a';
