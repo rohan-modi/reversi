@@ -4,25 +4,23 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-const int MAX_DEPTH=5;
+const int MAX_DEPTH = 10;
+const int MAX_TIME = 900;
+const int INVALID_MOVE_SCORE = -100000;
 
-const bool PRINT_FRIENDLY_BOARD=true;
-const char BLACK = '#';
-const char WHITE = 'O';
-const char BLANK = ' ';
+// const bool PRINT_FRIENDLY_BOARD=true;
+// const char BLACK = '#';
+// const char WHITE = 'O';
+// const char BLANK = ' ';
 
-// const bool PRINT_FRIENDLY_BOARD=false;
-// const char BLACK = 'B';
-// const char WHITE = 'W';
-// const char BLANK = 'U';
+const bool PRINT_FRIENDLY_BOARD=false;
+const char BLACK = 'B';
+const char WHITE = 'W';
+const char BLANK = 'U';
 
 
 bool printStuff = false;
 int totalMovesCounter = 1;
-
-struct rusage usage; // a structure to hold "resource usage" (including time)
-struct timeval start, end; // will hold the start and end times
-double timeStart, timeEnd, totalTime;
 
 bool isOccupied(char board[][26], int row, int col) {
     return board[row][col] == BLANK;
@@ -126,11 +124,11 @@ bool checkLegalInDirection(char board[][26], int n, int row, int col, char colou
 
 // Calculates and returns the score for a single cell.
 // Does not recurse into further depths.
-// Returns -10000 if the move is invalid.
+// Returns -100000 if the move is invalid.
 int getMoveScore(char board[][26], int n, char colour, int row, int col) {
     int startRow = row;
     int startCol = col;
-    int score = -10000;
+    int score = INVALID_MOVE_SCORE;
     bool moveLegal = false;
     bool edgeRow, edgeCol;
     for (int i = -1; i < 2; i++) {
@@ -181,13 +179,18 @@ int getMoveScore(char board[][26], int n, char colour, int row, int col) {
 
 // Calculates the scores for all cells and populates them into the provided 2D array.
 // Does not recurse into further depths.
-// Cells with no valid move will contain -10000.
-void getBoardScores(char board[][26], int n, char colour, int scores[][26]) {
+// Cells with no valid move will contain -100000.
+int getBoardScores(char board[][26], int n, char colour, int scores[][26]) {
+    int counter = 0;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             scores[i][j] = getMoveScore(board, n, colour, i, j);
+            if (scores[i][j] != INVALID_MOVE_SCORE) {
+                counter++;
+            }
         }
     }
+    return counter;
 }
 
 void copyBoard(char original[][26], char copy[][26], int n) {
@@ -249,8 +252,20 @@ void flipPieces(char board[][26], int n, char move[4]) {
     board[currentRow][currentCol] = move[0];
 }
 
-int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDepth) {
-    int bestScore = -1000, tempScore, additionalScore;
+// Finds the best move for the given board state and sets the row/col to 
+// the cell with the highest score (the best move).
+// The highest score is returned from the function.
+// Board state is not modified by this function.
+int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDepth, int maxTime) {
+
+    // start timer here
+    struct rusage usage; // a structure to hold "resource usage" (including time)
+    struct timeval start, end; // will hold the start and end times
+    getrusage(RUSAGE_SELF, &usage);
+    start = usage.ru_utime;
+    double timeStart = start.tv_sec + start.tv_usec / 1000000.0; // in seconds
+
+    int bestScore = INVALID_MOVE_SCORE, tempScore, additionalScore;
     int bestRow, bestCol;
     char nextBoard[26][26];
     char otherColour = BLACK;
@@ -259,14 +274,19 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
         otherColour = WHITE;
     }
     int scores[26][26];
-    getBoardScores(board, n, turn, scores);
+    int numOfValidMoves = getBoardScores(board, n, turn, scores);
+
+    int nextScore;
+
+    // figure out the number of valid next moves
+
     // printf("\nThe board scores are: \n");
     // printScores(scores, n);
     // printf("\n");
 
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            if (scores[i][j] == -10000) {
+            if (scores[i][j] == INVALID_MOVE_SCORE) {
                 continue;
             }
             if (maxDepth > 0) {
@@ -275,10 +295,26 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
                 move[1] = i + 'a';
                 move[2] = j + 'a';
                 flipPieces(nextBoard, n, move);
-                scores[i][j] = scores[i][j] - findMove(nextBoard, n, otherColour, row, col, maxDepth - 1);
+
+                // Pass time slice to next findMove check
+                nextScore = findMove(nextBoard, n, otherColour, row, col, maxDepth - 1, maxTime/numOfValidMoves);
+                if (nextScore == INVALID_MOVE_SCORE) {
+                    nextScore = 0;
+                }
+                scores[i][j] = scores[i][j] - nextScore;
+
+                // Check time elapsed, if past maxTime break the loop
+                getrusage(RUSAGE_SELF, &usage);
+                end = usage.ru_utime;
+                double timeEnd = end.tv_sec + end.tv_usec / 1000000.0; // in seconds
+                double totalTime = timeEnd - timeStart;
+                if (totalTime >= maxTime) {
+                    goto afterForLoop;
+                }
             }
         }
     }
+    afterForLoop:
 
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
@@ -288,42 +324,19 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
                     // printf("Final scores:\n");
                     // printScores(scores, n);
                     // printf("\n");
+                    // printf("COMPUTER FINDING NEW MOVE\n");
                     (*row) = i;
                     (*col) = j;
                 }
             }
         }
     }
-
-    // for (int i = 0; i < n; i++) {
-    //     for (int j = 0; j < n; j++) {
-    //         tempScore = getMoveScore(board, n, turn, i, j);
-    //         if (tempScore == 0) {
-    //             continue;
-    //         }
-    //         copyBoard(board, nextBoard, n);
-    //         move[0] = turn;
-    //         move[1] = i + 'a';
-    //         move[2] = j + 'a';
-    //         flipPieces(nextBoard, n, move);
-    //         if (maxDepth>0) {
-    //             additionalScore = findMove(nextBoard, n, otherColour, row, col, maxDepth-1);
-    //             tempScore = tempScore-additionalScore;
-    //         }
-    //         if (tempScore > bestScore) {
-    //             bestScore = tempScore + additionalScore;
-    //             if (maxDepth == MAX_DEPTH) {
-    //                 (*row) = i;
-    //                 (*col) = j;
-    //             }
-    //         }
-    //     }
-    // }
     return bestScore;
 }
 
+// Called by external test program
 int makeMove(char board[][26], int n, char turn, int *row, int *col) {
-    return findMove(board, n, turn, row, col, MAX_DEPTH);
+    return findMove(board, n, turn, row, col, MAX_DEPTH, 900);
 }
 
 char winner(char board[][26], int n) {
@@ -390,7 +403,7 @@ int main(void) {
         start = usage.ru_utime;
         timeStart = start.tv_sec + start.tv_usec / 1000000.0; // in seconds
 
-        findMove(board, size, BLACK, &bestRow, &bestCol, MAX_DEPTH);
+        findMove(board, size, BLACK, &bestRow, &bestCol, MAX_DEPTH, MAX_TIME);
         move[1] = bestRow + 'a';
         move[2] = bestCol + 'a';
         flipPieces(board, size, move);
@@ -443,7 +456,7 @@ int main(void) {
             start = usage.ru_utime;
             timeStart = start.tv_sec + start.tv_usec / 1000000.0; // in seconds
 
-            findMove(board, size, computerColour, &bestRow, &bestCol, MAX_DEPTH);
+            findMove(board, size, computerColour, &bestRow, &bestCol, MAX_DEPTH, MAX_TIME);
             move[1] = bestRow + 'a';
             move[2] = bestCol + 'a';
             flipPieces(board, size, move);
