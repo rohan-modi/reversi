@@ -5,14 +5,14 @@
 #include <sys/resource.h>
 
 const int MAX_DEPTH = 10;
-const int MAX_TIME = 900;
+const double MAX_TIME = 900.0;
 const int INVALID_MOVE_SCORE = -100000;
 
 const bool PRINT_FRIENDLY_BOARD=true;
 const char BLACK = '#';
 const char WHITE = 'O';
 const char BLANK = ' ';
-const bool COMPUTER_PLAYS_FOR_HUMAN=true;
+const bool COMPUTER_PLAYS_FOR_HUMAN=false;
 
 // const bool PRINT_FRIENDLY_BOARD=false;
 // const char BLACK = 'B';
@@ -265,14 +265,14 @@ void flipPieces(char board[][26], int n, char move[4]) {
 // the cell with the highest score (the best move).
 // The highest score is returned from the function.
 // Board state is not modified by this function.
-int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDepth, int maxTime) {
+int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDepth, double maxTime) {
 
     // start timer here
     struct rusage usage; // a structure to hold "resource usage" (including time)
     struct timeval start, end; // will hold the start and end times
     getrusage(RUSAGE_SELF, &usage);
     start = usage.ru_utime;
-    double timeStart = start.tv_sec + start.tv_usec / 1000000.0; // in seconds
+    double timeStart = (start.tv_sec + start.tv_usec / 1000000.0)*1000.0; // in milliseconds
 
     int bestScore = INVALID_MOVE_SCORE, tempScore, additionalScore;
     int bestRow, bestCol;
@@ -292,6 +292,7 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
     // printf("\nThe board scores are: \n");
     // printScores(scores, n);
     // printf("\n");
+    // printf("Max time: %lf\n", maxTime);
 
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
@@ -315,9 +316,10 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
                 // Check time elapsed, if past maxTime break the loop
                 getrusage(RUSAGE_SELF, &usage);
                 end = usage.ru_utime;
-                double timeEnd = end.tv_sec + end.tv_usec / 1000000.0; // in seconds
+                double timeEnd = (end.tv_sec + end.tv_usec / 1000000.0)*1000.0; // in milliseconds
                 double totalTime = timeEnd - timeStart;
                 if (totalTime >= maxTime) {
+                    // printf("Total time: %lf maxTime: %lf Depth reached: %d\n", totalTime, maxTime, maxDepth);
                     goto afterForLoop;
                 }
             }
@@ -345,7 +347,7 @@ int findMove(char board[][26], int n, char turn, int *row, int *col, int maxDept
 
 // Called by external test program
 int makeMove(char board[][26], int n, char turn, int *row, int *col) {
-    return findMove(board, n, turn, row, col, MAX_DEPTH, 900);
+    return findMove(board, n, turn, row, col, MAX_DEPTH, MAX_TIME);
 }
 
 Score winner(char board[][26], int n) {
@@ -423,7 +425,7 @@ int main(void) {
         if (hasLegalMove(board, size, playerColour)) {
 
             if (COMPUTER_PLAYS_FOR_HUMAN) {
-                findMove(board, size, playerColour, &bestRow, &bestCol, MAX_DEPTH);
+                findMove(board, size, playerColour, &bestRow, &bestCol, MAX_DEPTH, MAX_TIME);
                 move[1] = bestRow + 'a';
                 move[2] = bestCol + 'a';                
                 printf("\nComputer places %c for Player at %c%c.\n", playerColour, move[1], move[2]);
